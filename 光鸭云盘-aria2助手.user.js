@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         光鸭云盘 aria2 助手
 // @namespace    guangyapan.aria2-helper
-// @version      0.1.0
+// @version      0.2.0
 // @description  在光鸭云盘网页里把勾选的文件夹/文件递归展开，调用官方签名直链 API，再批量推送到 aria2，保留云端目录结构。
 // @author       gui
 // @match        https://guangyapan.com/*
