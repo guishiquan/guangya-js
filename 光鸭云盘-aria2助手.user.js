@@ -898,7 +898,24 @@
     }
   }
 
-  // ===== UI =====
+  // ===== UI（v0.3 工具条改版） =====
+  const ICONS = {
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+    chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+    chevronLeft: '<polyline points="15 18 9 12 15 6"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+    x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  };
+
+  function svg(name, size = 18) {
+    const path = ICONS[name] || '';
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+  }
+
   function injectStyles() {
     if (document.getElementById(ROOT_ID + '-style')) return;
     const style = document.createElement('style');
@@ -906,55 +923,112 @@
     style.textContent = `
 #${ROOT_ID} { all: initial; }
 #${ROOT_ID} *, #${ROOT_ID} *::before, #${ROOT_ID} *::after { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
-#${ROOT_ID} .gyp-panel {
-  position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
-  width: 360px; max-height: 70vh; display: flex; flex-direction: column;
-  background: #1f2937; color: #e5e7eb; border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+#${ROOT_ID} .gyp-toolbar {
+  position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+  z-index: 2147483647;
+  width: 44px; padding: 6px 0;
+  background: #1f2937; color: #e5e7eb;
+  border-radius: 8px 0 0 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  user-select: none;
+  transition: width .15s ease;
+}
+#${ROOT_ID} .gyp-toolbar.collapsed {
+  width: 10px; padding: 0;
+}
+#${ROOT_ID} .gyp-toolbar.collapsed > *:not([data-act="collapse"]) {
+  display: none;
+}
+#${ROOT_ID} .gyp-toolbar.collapsed [data-act="collapse"] {
+  width: 100%; height: 100%; min-height: 80px;
+}
+
+#${ROOT_ID} .gyp-grip {
+  width: 28px; height: 4px; border-radius: 2px;
+  background: #4b5563; cursor: ns-resize; margin: 2px 0 4px;
+}
+#${ROOT_ID} .gyp-grip:hover { background: #6b7280; }
+
+#${ROOT_ID} .gyp-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #6b7280; cursor: help;
+  transition: background .15s;
+}
+#${ROOT_ID} .gyp-dot.ok { background: #34d399; }
+#${ROOT_ID} .gyp-dot.bad { background: #f87171; }
+
+#${ROOT_ID} .gyp-sep {
+  width: 24px; height: 1px; background: #374151; margin: 2px 0;
+}
+
+#${ROOT_ID} .gyp-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: #e5e7eb;
+  border: 0; border-radius: 6px;
+  cursor: pointer; padding: 0;
+  position: relative;
+  transition: background .15s, color .15s;
+}
+#${ROOT_ID} .gyp-btn:hover { background: #374151; }
+#${ROOT_ID} .gyp-btn.active { background: #2563eb; color: #fff; }
+#${ROOT_ID} .gyp-btn.primary { background: #2563eb; color: #fff; }
+#${ROOT_ID} .gyp-btn.primary:hover { background: #1d4ed8; }
+#${ROOT_ID} .gyp-btn:disabled { color: #4b5563; cursor: not-allowed; background: transparent; }
+#${ROOT_ID} .gyp-btn.spin svg { animation: gyp-spin .9s linear infinite; }
+@keyframes gyp-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+#${ROOT_ID} .gyp-btn.busy { background: rgba(37, 99, 235, .25); animation: gyp-pulse 1.2s ease-in-out infinite; }
+@keyframes gyp-pulse { 0%,100% { background: rgba(37, 99, 235, .15); } 50% { background: rgba(37, 99, 235, .5); } }
+
+#${ROOT_ID} .gyp-popover {
+  position: fixed; right: 52px; z-index: 2147483646;
+  width: 380px; max-height: 70vh;
+  background: #1f2937; color: #e5e7eb;
+  border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  display: flex; flex-direction: column;
   font-size: 13px; line-height: 1.45;
 }
-#${ROOT_ID} .gyp-panel.collapsed { max-height: 36px; overflow: hidden; }
-#${ROOT_ID} .gyp-head { display:flex; align-items:center; justify-content:space-between;
-  padding: 8px 10px; background:#111827; border-radius:8px 8px 0 0; cursor: move; user-select:none; }
-#${ROOT_ID} .gyp-head .title { font-weight:600; color:#fbbf24; }
-#${ROOT_ID} .gyp-head .actions { display:flex; gap:6px; }
-#${ROOT_ID} .gyp-head button { background:transparent; color:#e5e7eb; border:1px solid #374151;
-  border-radius:4px; padding:2px 6px; font-size:12px; cursor:pointer; }
-#${ROOT_ID} .gyp-head button:hover { background:#374151; }
-#${ROOT_ID} .gyp-body { padding: 10px; overflow-y: auto; flex: 1; }
-#${ROOT_ID} .gyp-row { margin-bottom: 8px; }
-#${ROOT_ID} .gyp-status { font-size: 12px; color:#9ca3af; }
-#${ROOT_ID} .gyp-status.ok { color:#34d399; }
-#${ROOT_ID} .gyp-status.bad { color:#f87171; }
-#${ROOT_ID} .gyp-primary { display:block; width:100%; padding: 10px;
-  background:#2563eb; color:#fff; border:0; border-radius:6px;
-  font-size: 14px; font-weight:600; cursor:pointer; }
-#${ROOT_ID} .gyp-primary:hover { background:#1d4ed8; }
-#${ROOT_ID} .gyp-primary:disabled { background:#374151; cursor:not-allowed; }
-#${ROOT_ID} .gyp-secondary-row { display:flex; gap:6px; margin-top: 6px; }
-#${ROOT_ID} .gyp-secondary { flex:1; padding: 6px; background:#374151; color:#e5e7eb;
-  border:0; border-radius:4px; cursor:pointer; font-size:12px; }
-#${ROOT_ID} .gyp-secondary:hover { background:#4b5563; }
-#${ROOT_ID} .gyp-progress { font-size:12px; color:#fbbf24; margin-top:6px; min-height: 14px; }
-#${ROOT_ID} details { margin-top: 8px; border-top: 1px solid #374151; padding-top: 8px; }
-#${ROOT_ID} details > summary { cursor: pointer; color: #9ca3af; }
-#${ROOT_ID} label.gyp-field { display:block; margin: 6px 0 2px; color:#9ca3af; font-size:12px; }
+/* class 选择器优先级压过 user-agent 的 [hidden]{display:none}，必须显式覆盖 */
+#${ROOT_ID} .gyp-popover[hidden] { display: none !important; }
+#${ROOT_ID} .gyp-pop-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #111827; border-radius: 8px 8px 0 0;
+  font-weight: 600; color: #fbbf24;
+}
+#${ROOT_ID} .gyp-pop-close {
+  background: transparent; border: 0; color: #9ca3af; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 4px; padding: 0;
+}
+#${ROOT_ID} .gyp-pop-close:hover { background: #374151; color: #e5e7eb; }
+#${ROOT_ID} .gyp-pop-body { padding: 10px 12px; overflow-y: auto; flex: 1; }
+
+#${ROOT_ID} label.gyp-field { display: block; margin: 6px 0 2px; color: #9ca3af; font-size: 12px; }
 #${ROOT_ID} input.gyp-input, #${ROOT_ID} textarea.gyp-input {
-  width:100%; padding: 5px 6px; background:#111827; color:#e5e7eb;
-  border:1px solid #374151; border-radius:4px; font-size:12px;
+  width: 100%; padding: 5px 6px; background: #111827; color: #e5e7eb;
+  border: 1px solid #374151; border-radius: 4px; font-size: 12px;
 }
 #${ROOT_ID} textarea.gyp-input { resize: vertical; min-height: 28px; }
+#${ROOT_ID} details { margin-top: 8px; border-top: 1px solid #374151; padding-top: 8px; }
+#${ROOT_ID} details > summary { cursor: pointer; color: #9ca3af; }
+
 #${ROOT_ID} .gyp-log {
-  margin-top: 8px; background:#111827; border-radius:4px; padding: 6px;
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; line-height:1.4;
-  max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  background: #111827; border-radius: 4px; padding: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.4;
+  max-height: calc(70vh - 60px); overflow-y: auto;
+  white-space: pre-wrap; word-break: break-all;
 }
-#${ROOT_ID} .gyp-log .err { color:#f87171; }
-#${ROOT_ID} .gyp-log .warn { color:#fbbf24; }
+#${ROOT_ID} .gyp-log .err { color: #f87171; }
+#${ROOT_ID} .gyp-log .warn { color: #fbbf24; }
+
 #${ROOT_ID} .gyp-preview {
-  background:#111827; padding:6px; border-radius:4px; max-height:200px; overflow-y:auto;
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px;
+  background: #111827; padding: 6px; border-radius: 4px;
+  max-height: calc(70vh - 60px); overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
 }
+#${ROOT_ID} .gyp-preview-empty { color: #6b7280; padding: 12px; text-align: center; }
 `;
     document.head.appendChild(style);
   }
@@ -965,81 +1039,80 @@
     const root = document.createElement('div');
     root.id = ROOT_ID;
     root.innerHTML = `
-<div class="gyp-panel" data-state="open">
-  <div class="gyp-head">
-    <span class="title">${SCRIPT_NAME}</span>
-    <span class="actions">
-      <button data-act="toggle" title="收起/展开">_</button>
-    </span>
-  </div>
-  <div class="gyp-body">
-    <div class="gyp-row">
-      <div class="gyp-status" data-field="auth-status">认证：未识别</div>
-      <div class="gyp-status" data-field="dir-status">当前目录：未拦截</div>
-    </div>
-    <button class="gyp-primary" data-act="push">推送选中到 aria2</button>
-    <div class="gyp-secondary-row">
-      <button class="gyp-secondary" data-act="preview">展开预览</button>
-      <button class="gyp-secondary" data-act="test">测试 aria2</button>
-    </div>
-    <div class="gyp-progress" data-field="progress"></div>
+<div class="gyp-toolbar" data-state="open">
+  <div class="gyp-grip" data-grip="1" title="按住可上下拖动"></div>
+  <div class="gyp-dot" data-status="auth" title="认证：识别中"></div>
+  <div class="gyp-dot" data-status="dir" title="当前目录：未拦截"></div>
+  <div class="gyp-sep"></div>
+  <button class="gyp-btn primary" data-act="push" title="推送选中到 aria2">${svg('download')}</button>
+  <button class="gyp-btn" data-act="preview" title="展开预览（不推送）">${svg('eye')}</button>
+  <button class="gyp-btn" data-act="test" title="测试 aria2 连通">${svg('bolt')}</button>
+  <div class="gyp-sep"></div>
+  <button class="gyp-btn" data-act="toggle-settings" title="设置">${svg('gear')}</button>
+  <button class="gyp-btn" data-act="toggle-log" title="日志">${svg('list')}</button>
+  <div class="gyp-sep"></div>
+  <button class="gyp-btn" data-act="collapse" title="收起工具条">${svg('chevronRight')}</button>
+</div>
 
-    <details data-section="settings">
-      <summary>设置（点击展开）</summary>
-      <label class="gyp-field">aria2 RPC URL</label>
-      <input class="gyp-input" data-cfg="rpcUrl" placeholder="http://127.0.0.1:6800/jsonrpc"/>
-      <label class="gyp-field">aria2 Secret（无可留空）</label>
-      <input class="gyp-input" data-cfg="secret" type="text" placeholder=""/>
-      <label class="gyp-field">下载根目录（aria2 守护进程可写路径）</label>
-      <input class="gyp-input" data-cfg="downloadRoot" placeholder="/downloads/guangyapan"/>
-      <label class="gyp-field">取直链并发（1-8）</label>
-      <input class="gyp-input" data-cfg="resolveConcurrency" type="number" min="1" max="8"/>
-      <label class="gyp-field">每批 multicall 条数（1-200）</label>
-      <input class="gyp-input" data-cfg="multicallBatch" type="number" min="1" max="200"/>
-      <label class="gyp-field" style="margin-top:8px;">
-        <input type="checkbox" data-act="debug" style="vertical-align:middle;"/>
-        <span style="vertical-align:middle;">调试日志：把每次拦到的 guangyapan 请求 URL 打到日志</span>
-      </label>
-
-      <details data-section="auth">
-        <summary style="margin-top:6px;">手填光鸭认证（自动捕获失败时用）</summary>
-        <label class="gyp-field">Authorization（Bearer ...）</label>
-        <textarea class="gyp-input" data-auth="authorization" rows="2" placeholder="留空 → 用自动捕获"></textarea>
-        <label class="gyp-field">did</label>
-        <input class="gyp-input" data-auth="did" placeholder="留空 → 用自动捕获"/>
-        <label class="gyp-field">dt</label>
-        <input class="gyp-input" data-auth="dt" placeholder="留空 → 用自动捕获"/>
-      </details>
-    </details>
-
-    <details data-section="log" open>
-      <summary>日志</summary>
-      <div class="gyp-log" data-field="log"></div>
-    </details>
-
-    <details data-section="preview">
-      <summary>展开预览</summary>
-      <div class="gyp-preview" data-field="preview">（点上方「展开预览」生成）</div>
+<div class="gyp-popover" data-pop="settings" hidden>
+  <div class="gyp-pop-head"><span>设置</span><button class="gyp-pop-close" data-act="close-pop" title="关闭">${svg('x', 16)}</button></div>
+  <div class="gyp-pop-body">
+    <label class="gyp-field">aria2 RPC URL</label>
+    <input class="gyp-input" data-cfg="rpcUrl" placeholder="http://127.0.0.1:6800/jsonrpc"/>
+    <label class="gyp-field">aria2 Secret（无可留空）</label>
+    <input class="gyp-input" data-cfg="secret" type="text" placeholder=""/>
+    <label class="gyp-field">下载根目录（aria2 守护进程可写路径）</label>
+    <input class="gyp-input" data-cfg="downloadRoot" placeholder="/downloads/guangyapan"/>
+    <label class="gyp-field">取直链并发（1-8）</label>
+    <input class="gyp-input" data-cfg="resolveConcurrency" type="number" min="1" max="8"/>
+    <label class="gyp-field">每批 multicall 条数（1-200）</label>
+    <input class="gyp-input" data-cfg="multicallBatch" type="number" min="1" max="200"/>
+    <label class="gyp-field" style="margin-top:8px;">
+      <input type="checkbox" data-act="debug" style="vertical-align:middle;"/>
+      <span style="vertical-align:middle;">调试日志：把每次拦到的 guangyapan 请求 URL 打到日志</span>
+    </label>
+    <details data-section="auth">
+      <summary style="margin-top:6px;">手填光鸭认证（自动捕获失败时用）</summary>
+      <label class="gyp-field">Authorization（Bearer ...）</label>
+      <textarea class="gyp-input" data-auth="authorization" rows="2" placeholder="留空 → 用自动捕获"></textarea>
+      <label class="gyp-field">did</label>
+      <input class="gyp-input" data-auth="did" placeholder="留空 → 用自动捕获"/>
+      <label class="gyp-field">dt</label>
+      <input class="gyp-input" data-auth="dt" placeholder="留空 → 用自动捕获"/>
     </details>
   </div>
+</div>
+
+<div class="gyp-popover" data-pop="log" hidden>
+  <div class="gyp-pop-head"><span>日志</span><span style="display:flex;gap:4px;"><button class="gyp-pop-close" data-act="clear-log" title="清空日志">${svg('trash', 16)}</button><button class="gyp-pop-close" data-act="close-pop" title="关闭">${svg('x', 16)}</button></span></div>
+  <div class="gyp-pop-body"><div class="gyp-log" data-field="log"></div></div>
+</div>
+
+<div class="gyp-popover" data-pop="preview" hidden>
+  <div class="gyp-pop-head"><span>展开预览</span><button class="gyp-pop-close" data-act="close-pop" title="关闭">${svg('x', 16)}</button></div>
+  <div class="gyp-pop-body"><div class="gyp-preview" data-field="preview"><div class="gyp-preview-empty">点工具条上的「眼睛」生成预览</div></div></div>
 </div>
 `;
     document.body.appendChild(root);
 
-    // 字段引用
+    // 引用
     const $ = (sel) => root.querySelector(sel);
-    const elPanel = $('.gyp-panel');
+    const $$ = (sel) => Array.from(root.querySelectorAll(sel));
+    const elToolbar = $('.gyp-toolbar');
     const elPush = $('button[data-act="push"]');
     const elPreview = $('button[data-act="preview"]');
     const elTest = $('button[data-act="test"]');
-    const elToggle = $('button[data-act="toggle"]');
-    const elAuthStatus = $('[data-field="auth-status"]');
-    const elDirStatus = $('[data-field="dir-status"]');
-    const elProgress = $('[data-field="progress"]');
+    const elSettingsBtn = $('button[data-act="toggle-settings"]');
+    const elLogBtn = $('button[data-act="toggle-log"]');
+    const elCollapseBtn = $('button[data-act="collapse"]');
+    const elDotAuth = $('.gyp-dot[data-status="auth"]');
+    const elDotDir = $('.gyp-dot[data-status="dir"]');
     const elLog = $('[data-field="log"]');
     const elPreviewBox = $('[data-field="preview"]');
 
-    // 初始化输入字段
+    let activePopover = null;   // 'settings' | 'log' | 'preview' | null
+
+    // 同步配置到输入框
     function syncInputsFromState() {
       for (const key of Object.keys(STATE.config)) {
         if (key === 'manualAuth') continue;
@@ -1050,10 +1123,12 @@
         const input = root.querySelector(`[data-auth="${key}"]`);
         if (input) input.value = (STATE.config.manualAuth && STATE.config.manualAuth[key]) || '';
       }
+      const debugCb = root.querySelector('input[data-act="debug"]');
+      if (debugCb) debugCb.checked = !!STATE.debug;
     }
     syncInputsFromState();
 
-    // 失焦自动保存
+    // 失焦/勾选自动保存
     root.addEventListener('change', (e) => {
       const t = e.target;
       if (!t || !t.matches) return;
@@ -1079,58 +1154,98 @@
       }
     });
 
-    // 折叠
-    elToggle.addEventListener('click', () => {
-      elPanel.classList.toggle('collapsed');
+    // popover 开关
+    function openPopover(name) {
+      if (activePopover === name) return;
+      closePopover();
+      const pop = root.querySelector(`.gyp-popover[data-pop="${name}"]`);
+      if (!pop) return;
+      pop.hidden = false;
+      // 垂直对齐到工具条按钮的大致位置
+      const tbRect = elToolbar.getBoundingClientRect();
+      const popHeight = Math.min(window.innerHeight * 0.7, pop.scrollHeight + 60);
+      let top = tbRect.top + tbRect.height / 2 - popHeight / 2;
+      top = Math.max(8, Math.min(window.innerHeight - popHeight - 8, top));
+      pop.style.top = top + 'px';
+      activePopover = name;
+      // 高亮对应按钮
+      const btn = root.querySelector(`button[data-act="toggle-${name}"]`);
+      if (btn) btn.classList.add('active');
+    }
+    function closePopover() {
+      $$('.gyp-popover').forEach((p) => { p.hidden = true; });
+      $$('button[data-act^="toggle-"]').forEach((b) => b.classList.remove('active'));
+      activePopover = null;
+    }
+    function togglePopover(name) {
+      if (activePopover === name) closePopover();
+      else openPopover(name);
+    }
+
+    elSettingsBtn.addEventListener('click', () => togglePopover('settings'));
+    elLogBtn.addEventListener('click', () => togglePopover('log'));
+    root.addEventListener('click', (e) => {
+      if (e.target.closest('[data-act="close-pop"]')) closePopover();
+      if (e.target.closest('[data-act="clear-log"]')) {
+        STATE.logs.length = 0;
+        pushLog('日志已清空', 'info');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activePopover) closePopover();
     });
 
-    // 拖拽
-    enableDrag(elPanel, $('.gyp-head'));
+    // 折叠
+    elCollapseBtn.addEventListener('click', () => {
+      const collapsed = elToolbar.classList.toggle('collapsed');
+      elCollapseBtn.innerHTML = collapsed ? svg('chevronLeft') : svg('chevronRight');
+      elCollapseBtn.title = collapsed ? '展开工具条' : '收起工具条';
+      if (collapsed) closePopover();
+    });
 
-    // 按钮
+    // 拖拽（仅纵向）
+    enableVerticalDrag(elToolbar, $('.gyp-grip'));
+
+    // 主操作按钮
     elPush.addEventListener('click', async () => {
-      try {
-        await pushSelectionToAria2();
-      } catch (e) {
-        errorLog(e.message || String(e));
-      }
+      try { await pushSelectionToAria2(); }
+      catch (e) { errorLog(e.message || String(e)); openPopover('log'); }
     });
     elPreview.addEventListener('click', async () => {
-      try {
-        await pushSelectionToAria2({ previewOnly: true });
-      } catch (e) {
-        errorLog(e.message || String(e));
-      }
+      try { await pushSelectionToAria2({ previewOnly: true }); }
+      catch (e) { errorLog(e.message || String(e)); openPopover('log'); }
     });
     elTest.addEventListener('click', async () => {
+      elTest.classList.add('spin');
       try {
-        setProgress('正在测试 aria2...');
         const v = await testAria2();
         log(`aria2 测试通过：v${v && v.version} | 启用功能 ${(v && v.enabledFeatures || []).join(',')}`);
+        openPopover('log');
       } catch (e) {
         errorLog(`aria2 测试失败：${e.message || e}`);
+        openPopover('log');
       } finally {
-        setProgress('');
+        elTest.classList.remove('spin');
       }
     });
 
-    // 渲染函数
+    // 渲染函数（保持原 STATE.ui 接口）
     function renderAuthStatus() {
       const s = authStatusSummary();
-      elAuthStatus.textContent = `认证：${s.text}`;
-      elAuthStatus.classList.toggle('ok', s.ok);
-      elAuthStatus.classList.toggle('bad', !s.ok);
+      elDotAuth.classList.toggle('ok', s.ok);
+      elDotAuth.classList.toggle('bad', !s.ok);
+      elDotAuth.title = `认证：${s.text}`;
     }
     function renderDirStatus() {
       const pid = STATE.lastDirParentId;
       const hook = STATE.hookInstalled ? '✓拦截器已装' : '⚠拦截器未确认';
       if (!pid) {
-        elDirStatus.textContent = `${hook} | 当前目录：未拦截（请在云盘里浏览一次目标目录）`;
-        elDirStatus.classList.remove('ok'); elDirStatus.classList.add('bad');
+        elDotDir.classList.remove('ok'); elDotDir.classList.add('bad');
+        elDotDir.title = `${hook} | 当前目录：未拦截（请在云盘里浏览一次目标目录）`;
       } else {
         const c = (STATE.dirCache[pid] && STATE.dirCache[pid].items.length) || 0;
-        elDirStatus.textContent = `${hook} | 当前目录：parentId=${pid.slice(0, 16)}… 已缓存 ${c} 项`;
-        elDirStatus.classList.add('ok'); elDirStatus.classList.remove('bad');
+        elDotDir.classList.add('ok'); elDotDir.classList.remove('bad');
+        elDotDir.title = `${hook} | parentId=${pid.slice(0, 16)}… 已缓存 ${c} 项`;
       }
     }
     function renderLog() {
@@ -1141,24 +1256,33 @@
       elLog.scrollTop = elLog.scrollHeight;
     }
     function setProgress(text) {
-      elProgress.textContent = text || '';
+      // 工具条版本：进度文本走 log；不在 UI 上显示长字符串
+      if (text) log(text);
     }
     function setBusy(busy) {
       elPush.disabled = !!busy;
       elPreview.disabled = !!busy;
+      elPush.classList.toggle('busy', !!busy);
     }
     function showPreview(files) {
       const cfg = STATE.config;
-      const lines = files.map((f) => {
-        const { dir, out } = splitDirAndOut(cfg.downloadRoot, f.relPath);
-        return `${dir}/${out}`;
-      });
-      elPreviewBox.textContent = lines.join('\n');
-      const details = root.querySelector('details[data-section="preview"]');
-      if (details) details.open = true;
+      if (!files || !files.length) {
+        elPreviewBox.innerHTML = `<div class="gyp-preview-empty">无可下载文件</div>`;
+      } else {
+        const lines = files.map((f) => {
+          const { dir, out } = splitDirAndOut(cfg.downloadRoot, f.relPath);
+          return escapeHtml(`${dir}/${out}`);
+        });
+        elPreviewBox.innerHTML = lines.join('<br>');
+      }
+      openPopover('preview');
     }
 
-    STATE.ui = { renderAuthStatus, renderDirStatus, renderLog, setProgress, setBusy, showPreview };
+    STATE.ui = {
+      renderAuthStatus, renderDirStatus, renderLog,
+      setProgress, setBusy, showPreview,
+      openPopover, closePopover,
+    };
     renderAuthStatus();
     renderDirStatus();
     renderLog();
@@ -1170,25 +1294,26 @@
     }[c]));
   }
 
-  function enableDrag(panel, handle) {
+  function enableVerticalDrag(toolbar, handle) {
+    if (!handle) return;
     let dragging = false;
-    let startX = 0, startY = 0;
-    let startRight = 0, startBottom = 0;
+    let startY = 0;
+    let startTop = 0;
     handle.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button')) return;
       dragging = true;
-      startX = e.clientX; startY = e.clientY;
-      const r = panel.getBoundingClientRect();
-      startRight = window.innerWidth - r.right;
-      startBottom = window.innerHeight - r.bottom;
+      startY = e.clientY;
+      const r = toolbar.getBoundingClientRect();
+      startTop = r.top;
+      // 切换为绝对定位（top 而非 translateY 居中）以便自由滑动
+      toolbar.style.top = startTop + 'px';
+      toolbar.style.transform = 'none';
       e.preventDefault();
     });
     document.addEventListener('mousemove', (e) => {
       if (!dragging) return;
-      const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      panel.style.right = Math.max(0, startRight - dx) + 'px';
-      panel.style.bottom = Math.max(0, startBottom - dy) + 'px';
+      const next = Math.max(0, Math.min(window.innerHeight - toolbar.offsetHeight, startTop + dy));
+      toolbar.style.top = next + 'px';
     });
     document.addEventListener('mouseup', () => { dragging = false; });
   }
@@ -1214,10 +1339,15 @@
 
     try {
       if (typeof GM_registerMenuCommand === 'function') {
-        GM_registerMenuCommand('显示/隐藏 光鸭→aria2 面板', () => {
-          const panel = document.querySelector(`#${ROOT_ID} .gyp-panel`);
-          if (panel) panel.classList.toggle('collapsed');
-          else mountPanel();
+        GM_registerMenuCommand('显示/隐藏 光鸭→aria2 工具条', () => {
+          const toolbar = document.querySelector(`#${ROOT_ID} .gyp-toolbar`);
+          if (toolbar) {
+            const btn = toolbar.querySelector('button[data-act="collapse"]');
+            if (btn) btn.click();
+            else toolbar.classList.toggle('collapsed');
+          } else {
+            mountPanel();
+          }
         });
       }
     } catch (_) { /* ignore */ }
